@@ -12,8 +12,9 @@ Tired of auto-run getting stuck on every tree, rock and fence, so you have to st
 
 - **Client-side only.** The server and other players don't need the mod.
 - **Steers around obstacles:** trees, rocks, fences, walls and buildings. Once past, you go back to the direction you were heading.
-- **Gets unstuck:** if you stop moving against something, it tries the other side.
+- **Gets unstuck:** if you stop moving against something, it jumps over it when it's low (a fallen log), turns harder, and only then tries the other side.
 - **Sprint cycle:** while auto-running, it sprints when your stamina is full, stops when it runs out, waits for it to fill up again and repeats.
+- **Your sprint key still rules:** press it to stop sprinting (the cycle then waits for you) or to sprint right away.
 - Only acts during auto-run. Normal walking is untouched.
 - Steering pauses while you swim, ride or sit.
 - Works with **Improved Auto-run and Jump**: steering pauses while you strafe by hand.
@@ -47,6 +48,7 @@ Press **F1** in game (requires Configuration Manager) or edit `BepInEx/config/fe
 | MaxTurn | 90° | The widest turn used to get around something. |
 | AvoidCreatures | off | Also steer around creatures and other players. |
 | AutoJump | off | Jump over low obstacles instead of going around them. Only use it if auto-run survives a jump (Improved Auto-run and Jump does that). |
+| JumpWhenStuck | on | When stuck on something low (a fallen log), jump over it. Only with Improved Auto-run and Jump installed. |
 | PauseWhileStrafing | on | Stop steering while you strafe by hand. |
 | AutoSprint | on | The sprint cycle. Turn it off if another mod handles sprinting. |
 | StartAtPercent | 100 | Stamina (%) needed to start sprinting again. |
@@ -55,7 +57,7 @@ Press **F1** in game (requires Configuration Manager) or edit `BepInEx/config/fe
 
 ### Notes
 
-- Works well with **Bed Recall**, **Gather Tweaks**, **Build Tweaks** and **DigForHoe** (same author).
+- Works well with **Gather Tweaks**, **Build Tweaks** and **DigForHoe** (same author).
 
 ---
 
@@ -67,8 +69,9 @@ Cansado da corrida automática travar em toda árvore, pedra e cerca, e ter que 
 
 - **Só no seu jogo.** O servidor e os outros jogadores não precisam ter o mod.
 - **Desvia de obstáculos:** árvores, pedras, cercas, paredes e construções. Depois de passar, você volta para a direção em que estava indo.
-- **Destrava sozinho:** se você parar encostado em algo, ele tenta pelo outro lado.
+- **Destrava sozinho:** se você parar encostado em algo, ele pula por cima se for baixo (um tronco caído), vira mais forte e só então tenta pelo outro lado.
 - **Ciclo de corrida rápida:** durante a corrida automática, corre rápido com a stamina cheia, para quando ela acaba, espera encher de novo e repete.
+- **Sua tecla de correr manda:** aperte para parar de correr rápido (o ciclo espera você) ou para correr rápido na hora.
 - Só age na corrida automática. Andar normal não muda nada.
 - O desvio pausa enquanto você nada, está montado ou sentado.
 - Funciona com o **Improved Auto-run and Jump**: o desvio pausa enquanto você anda para os lados na mão.
@@ -102,6 +105,7 @@ Aperte **F1** no jogo (precisa do Configuration Manager) ou edite `BepInEx/confi
 | MaxTurn | 90° | A maior curva usada para contornar algo. |
 | AvoidCreatures | desligado | Desvia também de criaturas e outros jogadores. |
 | AutoJump | desligado | Pula obstáculos baixos em vez de contornar. Só use se a corrida automática continuar depois do pulo (o Improved Auto-run and Jump faz isso). |
+| JumpWhenStuck | ligado | Quando trava em algo baixo (um tronco caído), pula por cima. Só com o Improved Auto-run and Jump instalado. |
 | PauseWhileStrafing | ligado | Para de desviar enquanto você anda para os lados na mão. |
 | AutoSprint | ligado | O ciclo de corrida rápida. Desligue se outro mod já cuida da corrida rápida. |
 | StartAtPercent | 100 | Stamina (%) necessária para voltar a correr rápido. |
@@ -110,4 +114,4 @@ Aperte **F1** no jogo (precisa do Configuration Manager) ou edite `BepInEx/confi
 
 ### Observações
 
-- Combina com o **Bed Recall**, o **Gather Tweaks**, o **Build Tweaks** e o **DigForHoe** (mesmo autor).
+- Combina com o **Gather Tweaks**, o **Build Tweaks** e o **DigForHoe** (mesmo autor).
