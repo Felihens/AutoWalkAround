@@ -6,16 +6,19 @@ using UnityEngine;
 
 namespace AutoWalkAround
 {
+    public enum TurnStart { WhenClose, Early }
+
     [BepInPlugin(GUID, NAME, VERSION)]
     public class Plugin : BaseUnityPlugin
     {
         public const string GUID = "felih.AutoWalkAround";
         public const string NAME = "Auto Walk Around";
-        public const string VERSION = "1.0.1";
+        public const string VERSION = "1.0.2";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled;
         internal static ConfigEntry<KeyboardShortcut> ToggleKey;
+        internal static ConfigEntry<TurnStart> StartTurning;
         internal static ConfigEntry<float> LookAhead;
         internal static ConfigEntry<float> MaxTurn;
         internal static ConfigEntry<bool> PauseWhileStrafing;
@@ -44,8 +47,11 @@ namespace AutoWalkAround
                 "While auto-running, steer around trees, rocks, fences and walls in your way, then carry on in the same direction.");
             ToggleKey = Config.Bind("1 - General", "ToggleKey", new KeyboardShortcut(KeyCode.None),
                 "Optional key that turns the steering on and off in game. None = no key.");
+            StartTurning = Config.Bind("2 - Steering", "StartTurning", TurnStart.WhenClose,
+                "WhenClose: keep running until you're right at the obstacle, then go along it until the auto-run direction is clear again. " +
+                "Early: start turning LookAhead metres before the obstacle.");
             LookAhead = Config.Bind("2 - Steering", "LookAhead", 3f,
-                new ConfigDescription("How far ahead to look for obstacles, in metres.", new AcceptableValueRange<float>(1.5f, 8f)));
+                new ConfigDescription("How far ahead to look for obstacles, in metres, when StartTurning is Early.", new AcceptableValueRange<float>(1.5f, 8f)));
             MaxTurn = Config.Bind("2 - Steering", "MaxTurn", 90f,
                 new ConfigDescription("The widest turn used to get around something, in degrees.", new AcceptableValueRange<float>(30f, 120f)));
             PauseWhileStrafing = Config.Bind("3 - Compatibility", "PauseWhileStrafing", true,
@@ -154,6 +160,7 @@ namespace AutoWalkAround
         private static float _slowSince = -1f;
         private static float _lastJump;
         private static bool _wasSteering;
+        private const float CloseDistance = 0.7f;   // WhenClose: metres in front of you that count as touching
         private static int _lastSide;
         private static float _lastSideUntil;
         private static int _stuckCount;     // stuck again soon after the last time = same obstacle
@@ -196,7 +203,9 @@ namespace AutoWalkAround
             Vector3 heading = flat / mag;
             Vector3 pos = __instance.transform.position;
             float now = Time.time;
-            float ahead = Plugin.LookAhead.Value;
+            bool early = Plugin.StartTurning.Value == TurnStart.Early;
+            // WhenClose: only react once the obstacle is about an arm's length away.
+            float ahead = early ? Plugin.LookAhead.Value : CloseDistance;
 
             if (Plugin.AutoJump.Value) TryJump(__instance, pos, heading, now);
 
@@ -219,7 +228,7 @@ namespace AutoWalkAround
             {
                 // Path ahead is clear again: ease back onto the auto-run heading.
                 float next = Mathf.MoveTowards(_angle, 0f, 120f * Time.fixedDeltaTime);
-                if (!Blocked(pos, Turn(heading, next), ahead * 0.6f)) _angle = next;
+                if (!Blocked(pos, Turn(heading, next), early ? ahead * 0.6f : ahead)) _angle = next;
                 if (_angle == 0f)
                 {
                     if (_wasSteering) Plugin.Debug("[steer] back on course");
@@ -265,8 +274,8 @@ namespace AutoWalkAround
         // Both sides open at the same angle: go the way with more room further out.
         private static float Clearer(Vector3 pos, Vector3 heading, float a, float ahead)
         {
-            float r = Room(pos, Turn(heading, a + 15f), ahead * 1.5f);
-            float l = Room(pos, Turn(heading, -a - 15f), ahead * 1.5f);
+            float r = Room(pos, Turn(heading, a + 15f), Plugin.LookAhead.Value * 1.5f);
+            float l = Room(pos, Turn(heading, -a - 15f), Plugin.LookAhead.Value * 1.5f);
             return r >= l ? a : -a;
         }
 
@@ -339,10 +348,20 @@ namespace AutoWalkAround
             return Probe(pos + Vector3.up * 0.7f, dir, dist) || Probe(pos + Vector3.up * 1.4f, dir, dist);
         }
 
+        // Only steep surfaces count. A rock or big stone block you are standing on, whose top rises
+        // ahead of you, is ground you can walk up, not something to steer around.
+        private const float WalkableNormalY = 0.6f;   // about 53 degrees of slope
+        private static readonly RaycastHit[] Hits = new RaycastHit[16];
+
         private static bool Probe(Vector3 from, Vector3 dir, float dist)
         {
-            RaycastHit hit;
-            return Physics.SphereCast(from, 0.35f, dir, out hit, dist, Mask(), QueryTriggerInteraction.Ignore);
+            int n = Physics.SphereCastNonAlloc(from, 0.35f, dir, Hits, dist, Mask(), QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+            {
+                if (Hits[i].distance <= 0f) continue;              // already touching at the start: no usable normal
+                if (Hits[i].normal.y < WalkableNormalY) return true;
+            }
+            return false;
         }
 
         private static float Room(Vector3 pos, Vector3 dir, float dist)

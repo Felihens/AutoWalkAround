@@ -12,6 +12,7 @@ Tired of auto-run getting stuck on every tree, rock and fence, so you have to st
 
 - **Client-side only.** The server and other players don't need the mod.
 - **Steers around obstacles:** trees, rocks, fences, walls and buildings. Once past, you go back to the direction you were heading.
+- **Turns at the last moment:** by default it keeps running until you are right at the obstacle, then goes along it until the way ahead is clear. Rocks and stone blocks you can walk up are not obstacles.
 - **Gets unstuck:** if you stop moving against something, it jumps over it when it's low (a fallen log), turns harder, and only then tries the other side.
 - **Sprint cycle:** while auto-running, it sprints when your stamina is full, stops when it runs out, waits for it to fill up again and repeats.
 - **Your sprint key still rules:** press it to stop sprinting (the cycle then waits for you) or to sprint right away.
@@ -46,7 +47,8 @@ Press **F1** in game (requires Configuration Manager) or edit `BepInEx/config/fe
 |---|---|---|
 | Enabled | on | Steers around obstacles during auto-run. |
 | ToggleKey | none | Optional key that turns steering on and off in game. |
-| LookAhead | 3 m | How far ahead to look for obstacles. |
+| StartTurning | WhenClose | `WhenClose` = keep running until you are right at the obstacle, then go along it. `Early` = start turning LookAhead metres before. |
+| LookAhead | 3 m | How far ahead to look for obstacles when StartTurning is `Early`. |
 | MaxTurn | 90° | The widest turn used to get around something. |
 | AvoidCreatures | off | Also steer around creatures and other players. |
 | AutoJump | off | Jump over low obstacles instead of going around them. Only use it if auto-run survives a jump (Improved Auto-run and Jump does that). |
@@ -71,6 +73,7 @@ Cansado da corrida automática travar em toda árvore, pedra e cerca, e ter que 
 
 - **Só no seu jogo.** O servidor e os outros jogadores não precisam ter o mod.
 - **Desvia de obstáculos:** árvores, pedras, cercas, paredes e construções. Depois de passar, você volta para a direção em que estava indo.
+- **Vira só na hora certa:** por padrão continua correndo até chegar bem perto do obstáculo e então vai ao longo dele até o caminho ficar livre. Pedras e blocos de pedra em que dá para subir não contam como obstáculo.
 - **Destrava sozinho:** se você parar encostado em algo, ele pula por cima se for baixo (um tronco caído), vira mais forte e só então tenta pelo outro lado.
 - **Ciclo de corrida rápida:** durante a corrida automática, corre rápido com a stamina cheia, para quando ela acaba, espera encher de novo e repete.
 - **Sua tecla de correr manda:** aperte para parar de correr rápido (o ciclo espera você) ou para correr rápido na hora.
@@ -105,7 +108,8 @@ Aperte **F1** no jogo (precisa do Configuration Manager) ou edite `BepInEx/confi
 |---|---|---|
 | Enabled | ligado | Desvia de obstáculos na corrida automática. |
 | ToggleKey | nenhuma | Tecla opcional para ligar e desligar o desvio no jogo. |
-| LookAhead | 3 m | Distância à frente em que ele procura obstáculos. |
+| StartTurning | WhenClose | `WhenClose` = continua correndo até chegar bem perto do obstáculo e então vai ao longo dele. `Early` = começa a virar LookAhead metros antes. |
+| LookAhead | 3 m | Distância à frente em que ele procura obstáculos quando StartTurning é `Early`. |
 | MaxTurn | 90° | A maior curva usada para contornar algo. |
 | AvoidCreatures | desligado | Desvia também de criaturas e outros jogadores. |
 | AutoJump | desligado | Pula obstáculos baixos em vez de contornar. Só use se a corrida automática continuar depois do pulo (o Improved Auto-run and Jump faz isso). |
