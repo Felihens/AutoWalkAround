@@ -28,6 +28,8 @@ Tired of auto-run getting stuck on every tree, rock and fence, so you have to st
 
 **r2modman / Thunderstore Mod Manager:** click *Install*. To install a downloaded zip, go to Settings → *Import local mod*.
 
+**Nexus Mods / Vortex:** also on [Nexus Mods](https://www.nexusmods.com/valheim/mods/4892).
+
 **Manual:**
 1. Extract the zip.
 2. Copy the `plugins/AutoWalkAround` folder into `Valheim/BepInEx/plugins/`.
@@ -84,6 +86,8 @@ Cansado da corrida automática travar em toda árvore, pedra e cerca, e ter que 
 ### Instalação
 
 **r2modman / Thunderstore Mod Manager:** clique em *Install*. Para instalar um zip baixado, use Configurações → *Import local mod*.
+
+**Nexus Mods / Vortex:** também está no [Nexus Mods](https://www.nexusmods.com/valheim/mods/4892).
 
 **À mão:**
 1. Extraia o zip.
