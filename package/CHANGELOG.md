@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.3
+- Runs straight through bushes, saplings (young trees still growing) and berry or crop plants instead of steering around them. New option IgnorePlants (on). / Passa direto por arbustos, mudas (árvores novas ainda crescendo) e plantas de frutinhas ou plantações em vez de desviar delas. Nova opção IgnorePlants (ligada).
+
 ## 1.0.2
 - New option StartTurning (WhenClose): it keeps running until you are right at the obstacle, then goes along it until the auto-run direction is clear again. Early = the old behaviour, turning LookAhead metres before. / Nova opção StartTurning (WhenClose): continua correndo até chegar bem perto do obstáculo e então vai ao longo dele até a direção da corrida automática ficar livre. Early = o jeito antigo, virando LookAhead metros antes.
 - Standing on big rocks or stone blocks no longer makes it steer: only steep surfaces count as obstacles. / Ficar em cima de pedras grandes ou blocos de pedra não faz mais ele desviar: só superfícies íngremes contam como obstáculo.

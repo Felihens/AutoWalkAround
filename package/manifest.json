@@ -1,6 +1,6 @@
 {
   "name": "AutoWalkAround",
-  "version_number": "1.0.2",
+  "version_number": "1.0.3",
   "website_url": "https://github.com/Felihens/AutoWalkAround",
   "description": "Auto-run steers itself around trees, rocks and fences, and sprints whenever your stamina is full. Client-side.",
   "dependencies": [

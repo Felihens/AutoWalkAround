@@ -13,7 +13,7 @@ namespace AutoWalkAround
     {
         public const string GUID = "felih.AutoWalkAround";
         public const string NAME = "Auto Walk Around";
-        public const string VERSION = "1.0.2";
+        public const string VERSION = "1.0.3";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled;
@@ -39,6 +39,7 @@ namespace AutoWalkAround
         internal static ConfigEntry<float> SprintStartPercent;
         internal static ConfigEntry<float> SprintStopPercent;
         internal static ConfigEntry<bool> DetailedLog;
+        internal static ConfigEntry<bool> IgnorePlants;
 
         private void Awake()
         {
@@ -58,6 +59,8 @@ namespace AutoWalkAround
                 "Stop steering while you strafe by hand (with Improved Auto-run and Jump, strafing doesn't end auto-run). Turn off if you never strafe during auto-run.");
             AvoidCreatures = Config.Bind("2 - Steering", "AvoidCreatures", false,
                 "Also steer around creatures and other players. Off by default because moving creatures make the path wobble.");
+            IgnorePlants = Config.Bind("2 - Steering", "IgnorePlants", true,
+                "Run straight through bushes, saplings (young trees still growing) and berry or crop plants instead of steering around them.");
             AutoJump = Config.Bind("2 - Steering", "AutoJump", false,
                 "Jump over low obstacles (fallen logs, small rocks) instead of going around them. Keep this off unless auto-run survives a jump (Improved Auto-run and Jump does that).");
             JumpWhenStuck = Config.Bind("2 - Steering", "JumpWhenStuck", true,
@@ -359,6 +362,7 @@ namespace AutoWalkAround
             for (int i = 0; i < n; i++)
             {
                 if (Hits[i].distance <= 0f) continue;              // already touching at the start: no usable normal
+                if (Passable(Hits[i].collider)) continue;
                 if (Hits[i].normal.y < WalkableNormalY) return true;
             }
             return false;
@@ -366,10 +370,41 @@ namespace AutoWalkAround
 
         private static float Room(Vector3 pos, Vector3 dir, float dist)
         {
-            RaycastHit hit;
-            if (Physics.SphereCast(pos + Vector3.up * 1f, 0.35f, dir, out hit, dist, Mask(), QueryTriggerInteraction.Ignore))
-                return hit.distance;
-            return dist;
+            int n = Physics.SphereCastNonAlloc(pos + Vector3.up * 1f, 0.35f, dir, Hits, dist, Mask(), QueryTriggerInteraction.Ignore);
+            float best = dist;
+            for (int i = 0; i < n; i++)
+            {
+                if (Passable(Hits[i].collider)) continue;
+                if (Hits[i].distance < best) best = Hits[i].distance;
+            }
+            return best;
+        }
+
+        // things you can run through anyway: bushes, saplings still growing, berry bushes and crops,
+        // and anything on a layer the player doesn't bump into
+        private static readonly System.Collections.Generic.Dictionary<int, bool> PassCache = new System.Collections.Generic.Dictionary<int, bool>();
+
+        private static bool Passable(Collider col)
+        {
+            if (col == null) return true;
+            Player p = Player.m_localPlayer;
+            if (p != null && Physics.GetIgnoreLayerCollision(p.gameObject.layer, col.gameObject.layer)) return true;
+            if (!Plugin.IgnorePlants.Value) return false;
+            int id = col.GetInstanceID();
+            bool pass;
+            if (PassCache.TryGetValue(id, out pass)) return pass;
+            pass = false;
+            if (col.GetComponentInParent<Plant>() != null || col.GetComponentInParent<Pickable>() != null) pass = true;
+            else
+            {
+                Transform root = col.transform.root;
+                string name = (root != null ? root.name : col.name).ToLowerInvariant();
+                if (name.Contains("bush") || name.Contains("shrub") || name.Contains("sapling")) pass = true;
+            }
+            if (PassCache.Count > 4000) PassCache.Clear();
+            PassCache[id] = pass;
+            if (pass) Plugin.Debug("[steer] ignoring " + (col.transform.root != null ? col.transform.root.name : col.name));
+            return pass;
         }
 
         private static Vector3 Turn(Vector3 dir, float degrees)
