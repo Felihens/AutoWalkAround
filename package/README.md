@@ -53,8 +53,9 @@ Press **F1** in game (requires Configuration Manager) or edit `BepInEx/config/fe
 | MaxTurn | 90° | The widest turn used to get around something. |
 | IgnorePlants | on | Run straight through bushes, saplings (young trees still growing) and berry or crop plants instead of steering around them. |
 | AvoidCreatures | off | Also steer around creatures and other players. |
-| AutoJump | off | Jump over low obstacles instead of going around them. Only use it if auto-run survives a jump (Improved Auto-run and Jump does that). |
+| AutoJump | off | Jump over obstacles taller than a step and up to MaxJumpHeight, only when there is room above and ground behind, and going around would take a wide turn. Only use it if auto-run survives a jump (Improved Auto-run and Jump does that). |
 | JumpWhenStuck | on | When stuck on something low (a fallen log), jump over it. Only with Improved Auto-run and Jump installed. |
+| MaxJumpHeight | 1.1 | The tallest obstacle (metres) it jumps over. Taller things are steered around. |
 | PauseWhileStrafing | on | Stop steering while you strafe by hand. |
 | AutoSprint | on | The sprint cycle. Turn it off if another mod handles sprinting. |
 | StartAtPercent | 100 | Stamina (%) needed to start sprinting again. |
@@ -116,8 +117,9 @@ Aperte **F1** no jogo (precisa do Configuration Manager) ou edite `BepInEx/confi
 | MaxTurn | 90° | A maior curva usada para contornar algo. |
 | IgnorePlants | ligado | Passa direto por arbustos, mudas (árvores novas ainda crescendo) e plantas de frutinhas ou plantações em vez de desviar delas. |
 | AvoidCreatures | desligado | Desvia também de criaturas e outros jogadores. |
-| AutoJump | desligado | Pula obstáculos baixos em vez de contornar. Só use se a corrida automática continuar depois do pulo (o Improved Auto-run and Jump faz isso). |
+| AutoJump | desligado | Pula obstáculos mais altos que um degrau e até MaxJumpHeight, só quando há espaço em cima e chão do outro lado, e contornar exigiria uma virada grande. Só use se a corrida automática continuar depois do pulo (o Improved Auto-run and Jump faz isso). |
 | JumpWhenStuck | ligado | Quando trava em algo baixo (um tronco caído), pula por cima. Só com o Improved Auto-run and Jump instalado. |
+| MaxJumpHeight | 1.1 | O obstáculo mais alto (metros) que ele pula. Mais alto que isso, ele contorna. |
 | PauseWhileStrafing | ligado | Para de desviar enquanto você anda para os lados na mão. |
 | AutoSprint | ligado | O ciclo de corrida rápida. Desligue se outro mod já cuida da corrida rápida. |
 | StartAtPercent | 100 | Stamina (%) necessária para voltar a correr rápido. |

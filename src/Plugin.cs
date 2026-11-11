@@ -13,7 +13,7 @@ namespace AutoWalkAround
     {
         public const string GUID = "felih.AutoWalkAround";
         public const string NAME = "Auto Walk Around";
-        public const string VERSION = "1.0.3";
+        public const string VERSION = "1.0.4";
 
         internal static ManualLogSource Log;
         internal static ConfigEntry<bool> Enabled;
@@ -25,6 +25,7 @@ namespace AutoWalkAround
         internal static ConfigEntry<bool> AvoidCreatures;
         internal static ConfigEntry<bool> AutoJump;
         internal static ConfigEntry<bool> JumpWhenStuck;
+        internal static ConfigEntry<float> MaxJumpHeight;
         private static int _survives = -1;
         // Checked on first use: other plugins may load after this one.
         internal static bool AutoRunSurvivesJump
@@ -65,6 +66,10 @@ namespace AutoWalkAround
                 "Jump over low obstacles (fallen logs, small rocks) instead of going around them. Keep this off unless auto-run survives a jump (Improved Auto-run and Jump does that).");
             JumpWhenStuck = Config.Bind("2 - Steering", "JumpWhenStuck", true,
                 "When you get stuck on something low (a fallen log), jump over it. Only used with Improved Auto-run and Jump installed, since a jump ends the game's own auto-run.");
+            MaxJumpHeight = Config.Bind("2 - Steering", "MaxJumpHeight", 1.1f,
+                new ConfigDescription("The tallest obstacle, in metres, that is jumped over. Anything taller is steered around. " +
+                    "A jump is only made when the obstacle is taller than a step, there's room above it and ground behind it, " +
+                    "and getting around it would take a wide turn.", new AcceptableValueRange<float>(0.6f, 1.8f)));
             AutoSprint = Config.Bind("4 - Sprint", "AutoSprint", true,
                 "While auto-running, sprint whenever your stamina is full, stop when it runs out, wait for it to fill up again, and repeat.");
             SprintStartPercent = Config.Bind("4 - Sprint", "StartAtPercent", 100f,
@@ -210,7 +215,19 @@ namespace AutoWalkAround
             // WhenClose: only react once the obstacle is about an arm's length away.
             float ahead = early ? Plugin.LookAhead.Value : CloseDistance;
 
-            if (Plugin.AutoJump.Value) TryJump(__instance, pos, heading, now);
+            // Mid-jump: keep going straight over it instead of turning away in the air.
+            if (now - _lastJump < 0.9f && !__instance.IsOnGround())
+            {
+                if (_angle != 0f) ___m_moveDir = Turn(heading, _angle) * mag + Vector3.up * ___m_moveDir.y;
+                return;
+            }
+
+            if (Plugin.AutoJump.Value && TryJump(__instance, pos, heading, now))
+            {
+                // jumping along the auto-run line: drop any turn so the jump goes straight over
+                _angle = 0f; _side = 0; _wasSteering = false;
+                return;
+            }
 
             if (Blocked(pos, heading, ahead) && _angle != 0f && !Blocked(pos, Turn(heading, _angle), ahead))
             {
@@ -299,8 +316,8 @@ namespace AutoWalkAround
             _stuckCount = now - _lastStuck < 5f ? _stuckCount + 1 : 1;
             _lastStuck = now;
 
-            if (_stuckCount == 1 && Plugin.JumpWhenStuck.Value && Plugin.AutoRunSurvivesJump && IsLow(pos, moving)
-                && now - _lastJump > 1f)
+            if (_stuckCount == 1 && Plugin.JumpWhenStuck.Value && Plugin.AutoRunSurvivesJump && now - _lastJump > 1f
+                && p.HaveStamina(p.m_jumpStaminaUsage) && IsLow(pos, moving))
             {
                 _lastJump = now;
                 p.Jump(false);
@@ -327,22 +344,129 @@ namespace AutoWalkAround
         }
 
         // Something at knee height with nothing at chest height: a log or small rock you can jump.
+        // Measured instead of guessed: how tall it is, and whether there's room over it and ground behind it.
         private static bool IsLow(Vector3 pos, Vector3 dir)
         {
-            return Probe(pos + Vector3.up * 0.3f, dir, 1.2f) && !Probe(pos + Vector3.up * 1.3f, dir, 1.6f);
+            float dist, height;
+            string why;
+            return Jumpable(pos, dir, 1.4f, out dist, out height, out why);
         }
 
-        private static void TryJump(Player p, Vector3 pos, Vector3 heading, float now)
+        private const float StepHeight = 0.45f;     // the character walks over anything lower without jumping
+        private const float CheapDetour = 45f;      // a way around within this turn is better than a jump
+
+        // Auto-jump: only when something on the auto-run line is taller than a step, low enough to clear,
+        // has room above and ground behind it, and going around it would take a wide turn (a long fallen log,
+        // a low wall) rather than a small sidestep (a lone rock, a stump).
+        // Returns true when it jumped.
+        private static bool TryJump(Player p, Vector3 pos, Vector3 heading, float now)
         {
-            if (now - _lastJump < 1f || !p.IsOnGround()) return;
-            bool low = Probe(pos + Vector3.up * 0.3f, heading, 1.2f);
-            bool high = Probe(pos + Vector3.up * 1.1f, heading, 1.6f);
-            if (low && !high)
+            if (now - _lastJump < 1f || !p.IsOnGround() || p.InAttack() || p.IsEncumbered()) return false;
+            if (!p.HaveStamina(p.m_jumpStaminaUsage)) return false;
+            Rigidbody rb = p.GetComponent<Rigidbody>();
+            float speed = 0f;
+            if (rb != null) { Vector3 v = rb.linearVelocity; v.y = 0f; speed = v.magnitude; }
+            if (speed < 1.5f) return false;                 // standing or pushing against it: Unstick decides
+            // take off early enough that the forward speed carries you over, faster = earlier
+            float range = Mathf.Clamp(0.5f + speed * 0.15f, 0.8f, 1.8f);
+
+            float dist, height;
+            string why;
+            if (!Jumpable(pos, heading, range, out dist, out height, out why))
             {
-                _lastJump = now;
-                p.Jump(false);
-                Plugin.Debug("[steer] jumping over a low obstacle");
+                if (why != null && now - _lastNoJumpLog > 1f) { _lastNoJumpLog = now; Plugin.Debug("[jump] not jumping: " + why); }
+                return false;
             }
+            if (dist < 0.3f) return false;                   // too close to clear it from here
+            float around = DetourAngle(pos, heading, dist);
+            if (around <= CheapDetour)
+            {
+                if (now - _lastNoJumpLog > 1f) { _lastNoJumpLog = now; Plugin.Debug("[jump] not jumping: a " + around.ToString("0") + " degree turn gets around it"); }
+                return false;
+            }
+            _lastJump = now;
+            p.Jump(false);
+            Plugin.Debug("[jump] jumping over something " + height.ToString("0.00") + " m tall, " + dist.ToString("0.0") + " m ahead");
+            return true;
+        }
+        private static float _lastNoJumpLog;
+
+        // Is there something in front (within range) that is worth and safe to jump?
+        // why = reason it isn't (null when there's simply nothing in the way)
+        private static bool Jumpable(Vector3 pos, Vector3 dir, float range, out float dist, out float height, out string why)
+        {
+            dist = 0f; height = 0f; why = null;
+            Collider col;
+            // something at shin height, above what the character just steps over
+            if (!Cast(pos + Vector3.up * (StepHeight + 0.12f), dir, range, 0.12f, out dist, out col)) return false;
+            if (IsCreature(col)) { why = "it's a creature"; return false; }
+
+            float maxJump = Plugin.MaxJumpHeight.Value;
+            float d2;
+            Collider c2;
+            // still blocked just above the jump height: too tall (rock face, wall, big boulder)
+            if (Cast(pos + Vector3.up * (maxJump + 0.3f), dir, dist + 0.6f, 0.2f, out d2, out c2)) { why = "too tall"; return false; }
+
+            // climb a ladder of thin probes to find where it stops
+            height = maxJump;
+            for (float h = StepHeight + 0.27f; h <= maxJump + 0.01f; h += 0.15f)
+                if (!Cast(pos + Vector3.up * h, dir, dist + 0.5f, 0.1f, out d2, out c2)) { height = h; break; }
+            // and refine with a ray down onto its top, just past the front face
+            RaycastHit top;
+            Vector3 over = pos + dir * (dist + 0.35f);
+            over.y = pos.y + maxJump + 0.25f;
+            if (Physics.Raycast(over, Vector3.down, out top, maxJump + 0.25f, Mask(), QueryTriggerInteraction.Ignore) && !Passable(top.collider))
+                height = Mathf.Max(height - 0.15f, top.point.y - pos.y);
+            if (height <= StepHeight) { why = null; return false; }
+            if (height > maxJump) { why = "too tall (" + height.ToString("0.00") + " m)"; return false; }
+
+            // room for the body over it (low branches, a roof edge)
+            if (Cast(pos + Vector3.up * (height + 0.9f), dir, dist + 1.5f, 0.3f, out d2, out c2)) { why = "no headroom over it"; return false; }
+
+            // ground to land on behind it, not a drop or deep water
+            RaycastHit land;
+            Vector3 behind = pos + dir * (dist + 1.4f);
+            behind.y = pos.y + height + 0.4f;
+            if (!Physics.Raycast(behind, Vector3.down, out land, height + 0.4f + 2.5f, Mask(), QueryTriggerInteraction.Ignore))
+            { why = "no ground to land on behind it"; return false; }
+            if (land.normal.y < WalkableNormalY) { why = "the other side is too steep"; return false; }
+            if (ZoneSystem.instance != null && land.point.y < ZoneSystem.instance.m_waterLevel - 0.4f) { why = "water behind it"; return false; }
+            return true;
+        }
+
+        // Smallest turn (either side) that clears the obstacle; 999 when none within CheapDetour
+        private static float DetourAngle(Vector3 pos, Vector3 dir, float dist)
+        {
+            for (float a = 15f; a <= CheapDetour + 0.1f; a += 15f)
+                if (!Blocked(pos, Turn(dir, a), dist + 1.5f) || !Blocked(pos, Turn(dir, -a), dist + 1.5f)) return a;
+            return 999f;
+        }
+
+        private static bool IsCreature(Collider col)
+        {
+            if (col == null) return false;
+            return col.GetComponentInParent<Character>() != null;
+        }
+
+        // Nearest steep, solid surface along dir (creatures always count here, so they're never jumped)
+        private static bool Cast(Vector3 from, Vector3 dir, float dist, float radius, out float at, out Collider col)
+        {
+            at = dist; col = null;
+            int n = Physics.SphereCastNonAlloc(from, radius, dir, Hits, dist, MaskWithCreatures(), QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++)
+            {
+                if (Hits[i].distance <= 0f) continue;
+                if (Passable(Hits[i].collider)) continue;
+                if (Hits[i].normal.y >= WalkableNormalY) continue;
+                if (Hits[i].distance < at) { at = Hits[i].distance; col = Hits[i].collider; }
+            }
+            return col != null;
+        }
+
+        private static int MaskWithCreatures()
+        {
+            Mask();
+            return _maskWithCreatures;
         }
 
         // Probe at knee and chest height, above the height the character just steps over.

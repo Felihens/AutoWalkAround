@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+- Smarter jumps: it measures how tall the obstacle is and jumps only when it's taller than a step and up to `MaxJumpHeight` (1.1 m), there's room above it and ground to land on behind it (not a drop or deep water), and going around would take a wide turn. It never jumps over creatures, and keeps going straight while in the air. New option `MaxJumpHeight`.
+- Pulos mais espertos: mede a altura do obstáculo e só pula quando ele é mais alto que um degrau e até `MaxJumpHeight` (1,1 m), há espaço em cima e chão para pousar do outro lado (sem barranco nem água funda), e contornar exigiria uma virada grande. Nunca pula por cima de criaturas e segue reto enquanto está no ar. Nova opção `MaxJumpHeight`.
+
 ## 1.0.3
 - Runs straight through bushes, saplings (young trees still growing) and berry or crop plants instead of steering around them. New option IgnorePlants (on). / Passa direto por arbustos, mudas (árvores novas ainda crescendo) e plantas de frutinhas ou plantações em vez de desviar delas. Nova opção IgnorePlants (ligada).
 
